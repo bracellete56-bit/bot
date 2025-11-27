@@ -43,25 +43,37 @@ client.on("messageCreate", async (msg) => {
         }, 10000);
     };
 
-    // .rn - listar usuários ativos, um por embed
-    if (cmd === "rn") {
-        const users = Object.keys(activeUsers);
-        if (users.length === 0) {
-            const m = await msg.reply("Nenhum usuário ativo");
-            return delAfter5(msg, m);
-        }
+if (cmd === "rn") {
+    const users = Object.keys(activeUsers);
 
-        for (const u of users) {
-            const embed = new EmbedBuilder()
-                .setColor("#FFAA00")
-                .setTitle("Usuário Ativo")
-                .setDescription(u)
-                .setTimestamp();
-            await msg.channel.send({ embeds: [embed] });
-        }
-
-        return delAfter5(msg);
+    // Se não houver usuários ativos
+    if (users.length === 0) {
+        const m = await msg.reply("Nenhum usuário ativo");
+        setTimeout(() => {
+            msg.delete().catch(() => {});
+            m.delete().catch(() => {});
+        }, 10000);
+        return; // <- importante! não executa mais nada
     }
+
+    // Envia um embed para cada usuário
+    for (const u of users) {
+        const embed = new EmbedBuilder()
+            .setColor("#FFAA00")
+            .setTitle("Usuário Ativo")
+            .setDescription(u)
+            .setTimestamp();
+        await msg.channel.send({ embeds: [embed] });
+    }
+
+    // Só apaga a mensagem do usuário que digitou o comando
+    setTimeout(() => {
+        msg.delete().catch(() => {});
+    }, 10000);
+
+    return; // <- evita que outras coisas sejam chamadas
+}
+
 
     // .cmds - listar comandos disponíveis em embed
     if (cmd === "cmds") {
@@ -189,4 +201,5 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 client.login(BOT_TOKEN);
+
 
