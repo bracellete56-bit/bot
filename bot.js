@@ -34,7 +34,17 @@ client.once("ready", () => {
 
 // ====== ENDPOINT RECEBENDO DO ROBLOX ======
 app.post("/log", async (req, res) => {
-    const { userId, username } = req.body;
+    const { 
+        userId, 
+        username, 
+        executor,
+        device,
+        date,
+        time,
+        placeId,
+        placeName,
+        serverJobId
+    } = req.body;
 
     if (!userId || !username) {
         return res.status(400).send("Requisição inválida.");
@@ -42,10 +52,22 @@ app.post("/log", async (req, res) => {
 
     if (!db.users.includes(userId)) {
         db.users.push(userId);
-        saveDB();
+        salvarDB();
 
         const channel = await client.channels.fetch(CANAL_DESTINO);
-        channel.send(`[${username}](https://www.roblox.com/users/${userId}/profile)`);
+
+        const msg =
+`USUÁRIO:
+**Usuário:** [${username}](https://www.roblox.com/users/${userId}/profile)
+**Executor:** ${executor}
+**Dispositivo:** ${device}
+**Data:** ${date}
+**Hora:** ${time}
+**Jogo:** [${placeName}](https://www.roblox.com/games/${placeId})
+**Entrar no servidor:** https://www.roblox.com/games/start?placeId=${placeId}&jobId=${serverJobId}
+`;
+
+        channel.send(msg);
     }
 
     return res.send("OK");
@@ -58,3 +80,4 @@ app.listen(PORT, () => {
 });
 
 client.login(BOT_TOKEN);
+
