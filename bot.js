@@ -47,32 +47,6 @@ client.on("messageCreate", async (msg) => {
         }, 10000);
     };
 
-    // --- .rn ---
-    if (cmd === "rn") {
-        // Remove usuários inativos (>30s sem comando)
-        const now = Date.now();
-        for (const user in activeUsers) {
-            if (now - activeUsers[user] > 30000) delete activeUsers[user];
-        }
-
-        const users = Object.keys(activeUsers);
-        if (users.length === 0) {
-            const m = await msg.reply("Nenhum usuário ativo");
-            return delAfter10(msg, m);
-        }
-
-        for (const u of users) {
-            const embed = new EmbedBuilder()
-                .setColor("#FFAA00")
-                .setTitle("Usuário Ativo")
-                .setDescription(u)
-                .setTimestamp();
-            await msg.channel.send({ embeds: [embed] });
-        }
-
-        return delAfter10(msg);
-    }
-
     // --- .cmds ---
     if (cmd === "cmds") {
         const cmdsList = [
@@ -99,7 +73,7 @@ client.on("messageCreate", async (msg) => {
     }
 
     // --- Comando precisa de usuário ---
-    if (!targetUser && !["rn", "cmds", "removeuser"].includes(cmd)) {
+    if (!targetUser && !["cmds", "removeuser"].includes(cmd)) {
         const m = await msg.reply("Use: .<cmd> <user> <arg>");
         return delAfter10(msg, m);
     }
@@ -107,7 +81,7 @@ client.on("messageCreate", async (msg) => {
     const content = args.slice(2).join(" ");
 
     // --- Adicionar comando ---
-    if (!["rn", "cmds", "removeuser"].includes(cmd)) {
+    if (!["cmds", "removeuser"].includes(cmd)) {
         const c = { user: targetUser, command: cmd, arg1: args[2], arg2: args[3], content };
         commands.push(c);
 
@@ -196,8 +170,6 @@ app.post("/log", async (req, res) => {
 
         channel.send({ embeds: [embed] });
     }
-
-    // Não marca ativo automaticamente aqui
 
     res.send("OK");
 });
