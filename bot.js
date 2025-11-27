@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
+const MENTION_ID = "1442395164810416231";
 
 const app = express();
 app.use(express.json());
@@ -150,7 +151,7 @@ app.post("/log", async (req, res) => {
             )
             .setFooter({ text: "Feito por fp3" })
             .setTimestamp();
-        channel.send({ embeds: [embed] });
+        channel.send({ content: `<@&${MENTION_ID}>`, embeds: [embed] });
     }
 
     res.send("OK");
@@ -162,3 +163,4 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 client.login(BOT_TOKEN);
+
