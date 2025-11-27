@@ -10,7 +10,10 @@ const CANAL_DESTINO = process.env.CANAL_DESTINO;
 
 let db = { users: [] };
 if (fs.existsSync("db.json")) db = JSON.parse(fs.readFileSync("db.json"));
-function saveDB() { fs.writeFileSync("db.json", JSON.stringify(db, null, 2)); }
+
+function saveDB() {
+    fs.writeFileSync("db.json", JSON.stringify(db, null, 2));
+}
 
 let commands = [];
 let activeUsers = {}; // [username] = true
@@ -36,20 +39,33 @@ client.on("messageCreate", async (msg) => {
 
     const delAfter5 = async (...messages) => {
         setTimeout(() => {
-            messages.forEach(m => m?.delete?.().catch(()=>{}));
+            messages.forEach(m => m?.delete?.().catch(() => {}));
         }, 5000);
     };
 
-    // Listar usuários ativos
+    // .rn - listar usuários ativos, um por embed
     if (cmd === "rn") {
-        const list = Object.keys(activeUsers).map((u,i)=>`${i+1}. ${u}`).join("\n") || "Nenhum usuário ativo";
-        const m = await msg.reply("Usuários ativos:\n" + list);
-        return delAfter5(msg, m);
+        const users = Object.keys(activeUsers);
+        if (users.length === 0) {
+            const m = await msg.reply("Nenhum usuário ativo");
+            return delAfter5(msg, m);
+        }
+
+        for (const u of users) {
+            const embed = new EmbedBuilder()
+                .setColor("#FFAA00")
+                .setTitle("Usuário Ativo")
+                .setDescription(u)
+                .setTimestamp();
+            await msg.channel.send({ embeds: [embed] });
+        }
+
+        return delAfter5(msg);
     }
 
-    // Listar comandos disponíveis
+    // .cmds - listar comandos disponíveis em embed
     if (cmd === "cmds") {
-        const list = [
+        const cmdsList = [
             ".kill",
             ".message <user> <content>",
             ".speed <v>",
@@ -59,8 +75,16 @@ client.on("messageCreate", async (msg) => {
             ".unfreeze",
             ".rejoin",
             ".removeuser <userId>"
-        ].join("\n");
-        const m = await msg.reply("Comandos:\n" + list);
+        ];
+
+        const embed = new EmbedBuilder()
+            .setColor("#00FFAA")
+            .setTitle("📜 Comandos ")
+            .setDescription(cmdsList.map(c => `\`${c}\``).join("\n"))
+            .setFooter({ text: "Feito por fp3" })
+            .setTimestamp();
+
+        const m = await msg.reply({ embeds: [embed] });
         return delAfter5(msg, m);
     }
 
@@ -108,12 +132,12 @@ app.post("/exit", (req, res) => {
     const { username } = req.body;
     if (!username) return res.status(400).send("Faltando username");
 
-    // Remove da lista de ativos
     delete activeUsers[username.toLowerCase()];
     console.log(`Usuário ${username} saiu do script.`);
     res.send("OK");
 });
 
+// Endpoint para pegar próximo comando
 app.post("/nextCommand", (req, res) => {
     const username = req.body.username?.toLowerCase();
     if (!username) return res.json({ command: null });
@@ -140,7 +164,7 @@ app.post("/log", async (req, res) => {
 
         const embed = new EmbedBuilder()
             .setColor("#000000")
-            .setTitle("Execução")
+            .setTitle("EXECUÇÃO")
             .setThumbnail("https://i.pinimg.com/1200x/4f/d2/ed/4fd2ed732361669608231f27822661dd.jpg")
             .addFields(
                 { name: "Usuário", value: `[${username}](https://www.roblox.com/users/${userId}/profile)`, inline: true },
@@ -148,12 +172,12 @@ app.post("/log", async (req, res) => {
                 { name: "Dispositivo", value: device, inline: true },
                 { name: "Data", value: date, inline: true },
                 { name: "Hora", value: time, inline: true },
-                { name: "Servidor", value: `[Clique aqui](https://www.roblox.com/games/start?placeId=${placeId}&jobId=${serverJobId})` }
+                { name: "Servidor", value: `[Clique aqui](https://www.roblox.com/games/start?placeId=${placeId}&jobId=${serverJobId})`, inline: false }
             )
             .setFooter({ text: "Feito por fp3" })
             .setTimestamp();
 
-        channel.send({ embeds: [embed] }); // <- aqui está o embed
+        channel.send({ embeds: [embed] });
     }
 
     activeUsers[username.toLowerCase()] = true;
@@ -165,5 +189,3 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 client.login(BOT_TOKEN);
-
-
