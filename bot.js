@@ -1,6 +1,15 @@
 const express = require("express");
 const fs = require("fs");
 const { Client, GatewayIntentBits } = require("discord.js");
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
+});
+
+
 
 const app = express();
 app.use(express.json());
@@ -31,6 +40,25 @@ const client = new Client({
 client.once("ready", () => {
     console.log("Bot iniciado!");
 });
+
+// ====== COMANDO PARA REMOVER USUÁRIO DA DATABASE ======
+client.on("messageCreate", async (msg) => {
+    if (!msg.content.startsWith("!deluser")) return;
+
+    const args = msg.content.split(" ");
+    const id = args[1];
+
+    if (!id) return msg.reply("Use: `!deluser <UserId>`");
+
+    const index = db.users.indexOf(id);
+    if (index === -1) return msg.reply("Esse ID não está na database.");
+
+    db.users.splice(index, 1);
+    salvarDB();
+
+    msg.reply(`ID **${id}** removido da database.`);
+});
+
 
 // ====== ENDPOINT RECEBENDO DO ROBLOX ======
 app.post("/log", async (req, res) => {
@@ -80,4 +108,5 @@ app.listen(PORT, () => {
 });
 
 client.login(BOT_TOKEN);
+
 
