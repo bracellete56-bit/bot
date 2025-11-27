@@ -103,6 +103,18 @@ client.on("messageCreate", async (msg) => {
     }
 });
 
+// Endpoint para avisar que o jogador deixou o script
+app.post("/exit", (req, res) => {
+    const { username } = req.body;
+    if (!username) return res.status(400).send("Faltando username");
+
+    // Remove da lista de ativos
+    delete activeUsers[username.toLowerCase()];
+    console.log(`Usuário ${username} saiu do script.`);
+    res.send("OK");
+});
+
+
 app.post("/nextCommand", (req, res) => {
     const username = req.body.username?.toLowerCase();
     if (!username) return res.json({ command: null });
@@ -145,3 +157,4 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 client.login(BOT_TOKEN);
+
