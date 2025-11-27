@@ -40,12 +40,14 @@ client.on("messageCreate", async (msg) => {
         }, 5000);
     };
 
+    // Listar usuários ativos
     if (cmd === "rn") {
         const list = Object.keys(activeUsers).map((u,i)=>`${i+1}. ${u}`).join("\n") || "Nenhum usuário ativo";
         const m = await msg.reply("Usuários ativos:\n" + list);
         return delAfter5(msg, m);
     }
 
+    // Listar comandos disponíveis
     if (cmd === "cmds") {
         const list = [
             ".kill",
@@ -55,21 +57,50 @@ client.on("messageCreate", async (msg) => {
             ".bring <user1> <user2>",
             ".freeze",
             ".unfreeze",
-            ".rejoin"
+            ".rejoin",
+            ".removeuser <userId>"
         ].join("\n");
         const m = await msg.reply("Comandos:\n" + list);
         return delAfter5(msg, m);
     }
 
-    if (!targetUser) return msg.reply("Use: .<cmd> <user> <arg>").then(m=>delAfter5(msg,m));
+    // Comando que precisa de usuário
+    if (!targetUser && !["rn","cmds","removeuser"].includes(cmd)) {
+        const m = await msg.reply("Use: .<cmd> <user> <arg>");
+        return delAfter5(msg, m);
+    }
 
     const content = args.slice(2).join(" ");
 
-    const c = { user: targetUser, command: cmd, arg1: args[2], arg2: args[3], content };
-    commands.push(c);
+    // Adicionar comando para execução no jogo
+    if (!["rn","cmds","removeuser"].includes(cmd)) {
+        const c = { user: targetUser, command: cmd, arg1: args[2], arg2: args[3], content };
+        commands.push(c);
 
-    const m = await msg.reply(`**${cmd}** enviado para **${targetUser}**.`);
-    delAfter5(msg, m);
+        const m = await msg.reply(`**${cmd}** enviado para **${targetUser}**.`);
+        delAfter5(msg, m);
+    }
+
+    // Comando para remover usuário da database
+    if (cmd === "removeuser") {
+        const userIdToRemove = args[1];
+        if (!userIdToRemove) {
+            const m = await msg.reply("Use: `.removeuser <userId>`");
+            return delAfter5(msg, m);
+        }
+
+        const index = db.users.indexOf(Number(userIdToRemove));
+        if (index === -1) {
+            const m = await msg.reply(`Usuário ${userIdToRemove} não está na database.`);
+            return delAfter5(msg, m);
+        }
+
+        db.users.splice(index, 1);
+        saveDB();
+
+        const m = await msg.reply(`Usuário ${userIdToRemove} removido da database com sucesso!`);
+        return delAfter5(msg, m);
+    }
 });
 
 app.post("/nextCommand", (req, res) => {
@@ -95,7 +126,7 @@ app.post("/log", async (req, res) => {
         saveDB();
 
         const channel = await client.channels.fetch(CANAL_DESTINO);
-        const msg = `📌 ****
+        const msg = `📌 **USUÁRIO NOVO**
 **Usuário:** [${username}](https://www.roblox.com/users/${userId}/profile)
 **Executor:** ${executor}
 **Dispositivo:** ${device}
