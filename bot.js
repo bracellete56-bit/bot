@@ -40,7 +40,7 @@ client.on("messageCreate", async (msg) => {
     const delAfter5 = async (...messages) => {
         setTimeout(() => {
             messages.forEach(m => m?.delete?.().catch(() => {}));
-        }, 5000);
+        }, 10000);
     };
 
     // .rn - listar usuários ativos, um por embed
@@ -189,3 +189,4 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 client.login(BOT_TOKEN);
+
