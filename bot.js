@@ -47,7 +47,6 @@ client.on("messageCreate", async (msg) => {
         }, 10000);
     };
 
-    // --- .cmds ---
     if (cmd === "cmds") {
         const cmdsList = [
             ".kill",
@@ -60,19 +59,16 @@ client.on("messageCreate", async (msg) => {
             ".rejoin",
             ".removeuser <userId>"
         ];
-
         const embed = new EmbedBuilder()
             .setColor("#00FFAA")
             .setTitle("📜 Comandos")
             .setDescription(cmdsList.map(c => `\`${c}\``).join("\n"))
             .setFooter({ text: "Feito por fp3" })
             .setTimestamp();
-
         const m = await msg.reply({ embeds: [embed] });
         return delAfter10(msg, m);
     }
 
-    // --- Comando precisa de usuário ---
     if (!targetUser && !["cmds", "removeuser"].includes(cmd)) {
         const m = await msg.reply("Use: .<cmd> <user> <arg>");
         return delAfter10(msg, m);
@@ -80,35 +76,27 @@ client.on("messageCreate", async (msg) => {
 
     const content = args.slice(2).join(" ");
 
-    // --- Adicionar comando ---
     if (!["cmds", "removeuser"].includes(cmd)) {
         const c = { user: targetUser, command: cmd, arg1: args[2], arg2: args[3], content };
         commands.push(c);
-
-        // Marca usuário como ativo
         activeUsers[targetUser] = Date.now();
-
         const m = await msg.reply(`**${cmd}** enviado para **${targetUser}**.`);
         return delAfter10(msg, m);
     }
 
-    // --- Remover usuário da DB ---
     if (cmd === "removeuser") {
         const userIdToRemove = args[1];
         if (!userIdToRemove) {
             const m = await msg.reply("Use: `.removeuser <userId>`");
             return delAfter10(msg, m);
         }
-
         const index = db.users.indexOf(Number(userIdToRemove));
         if (index === -1) {
             const m = await msg.reply(`Usuário ${userIdToRemove} não está na database.`);
             return delAfter10(msg, m);
         }
-
         db.users.splice(index, 1);
         saveDB();
-
         const m = await msg.reply(`Usuário ${userIdToRemove} removido da database com sucesso!`);
         return delAfter10(msg, m);
     }
@@ -132,10 +120,7 @@ app.post("/nextCommand", (req, res) => {
     const found = commands.find(c => c.user === username);
     if (found) {
         commands = commands.filter(c => c !== found);
-
-        // Marca usuário como ativo
         activeUsers[username] = Date.now();
-
         return res.json(found);
     }
 
@@ -150,9 +135,7 @@ app.post("/log", async (req, res) => {
     if (!db.users.includes(userId)) {
         db.users.push(userId);
         saveDB();
-
         const channel = await client.channels.fetch(CANAL_DESTINO);
-
         const embed = new EmbedBuilder()
             .setColor("#000000")
             .setTitle("EXECUÇÃO")
@@ -167,7 +150,6 @@ app.post("/log", async (req, res) => {
             )
             .setFooter({ text: "Feito por fp3" })
             .setTimestamp();
-
         channel.send({ embeds: [embed] });
     }
 
