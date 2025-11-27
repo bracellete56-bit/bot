@@ -1,6 +1,6 @@
 const express = require("express");
 const fs = require("fs");
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 
 const app = express();
 app.use(express.json());
@@ -114,7 +114,6 @@ app.post("/exit", (req, res) => {
     res.send("OK");
 });
 
-
 app.post("/nextCommand", (req, res) => {
     const username = req.body.username?.toLowerCase();
     if (!username) return res.json({ command: null });
@@ -138,14 +137,23 @@ app.post("/log", async (req, res) => {
         saveDB();
 
         const channel = await client.channels.fetch(CANAL_DESTINO);
-        const msg = `📌 **USUÁRIO NOVO**
-**Usuário:** [${username}](https://www.roblox.com/users/${userId}/profile)
-**Executor:** ${executor}
-**Dispositivo:** ${device}
-**Data:** ${date}
-**Hora:** ${time}
-**Entrar no servidor:** https://www.roblox.com/games/start?placeId=${placeId}&jobId=${serverJobId}`;
-        channel.send(msg);
+
+        const embed = new EmbedBuilder()
+            .setColor("#00FFAA")
+            .setTitle("Execução")
+            .setThumbnail("https://i.pinimg.com/736x/82/3e/b3/823eb37ba37be4c400628296efa3219e.jpg")
+            .addFields(
+                { name: "Usuário", value: `[${username}](https://www.roblox.com/users/${userId}/profile)`, inline: true },
+                { name: "Executor", value: executor, inline: true },
+                { name: "Dispositivo", value: device, inline: true },
+                { name: "Data", value: date, inline: true },
+                { name: "Hora", value: time, inline: true },
+                { name: "Servidor", value: `[Clique aqui](https://www.roblox.com/games/start?placeId=${placeId}&jobId=${serverJobId})` }
+            )
+            .setFooter({ text: "Feito por fp3" })
+            .setTimestamp();
+
+        channel.send({ embeds: [embed] });
     }
 
     activeUsers[username.toLowerCase()] = true;
@@ -157,4 +165,3 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 client.login(BOT_TOKEN);
-
