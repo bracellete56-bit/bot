@@ -6,7 +6,7 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent   // NECESSÁRIO PARA LER COMANDOS
+        GatewayIntentBits.MessageContent   // Permite ler comandos
     ]
 });
 
@@ -28,22 +28,26 @@ if (fs.existsSync("db.json")) {
     db = JSON.parse(fs.readFileSync("db.json"));
 }
 
-// ====== DISCORD BOT ======
+// ====== BOT ONLINE ======
 client.once("ready", () => {
     console.log("Bot iniciado!");
 });
 
-// ====== COMANDO !deluser ======
+// ====== COMANDO: !deluser <id> ======
 client.on("messageCreate", async (msg) => {
     if (!msg.content.startsWith("!deluser")) return;
 
     const args = msg.content.split(" ");
     const id = args[1];
 
-    if (!id) return msg.reply("Use: `!deluser <UserId>`");
+    if (!id) {
+        return msg.reply("Use: `!deluser <UserId>`");
+    }
 
     const index = db.users.indexOf(id);
-    if (index === -1) return msg.reply("Esse ID não está na database.");
+    if (index === -1) {
+        return msg.reply("Esse ID não está na database.");
+    }
 
     db.users.splice(index, 1);
     saveDB();
@@ -51,7 +55,7 @@ client.on("messageCreate", async (msg) => {
     msg.reply(`ID **${id}** removido da database.`);
 });
 
-// ====== ENDPOINT RECEBENDO DO ROBLOX ======
+// ====== ENDPOINT /log RECEBENDO DO ROBLOX ======
 app.post("/log", async (req, res) => {
     const { 
         userId, 
@@ -69,27 +73,28 @@ app.post("/log", async (req, res) => {
         return res.status(400).send("Requisição inválida.");
     }
 
+    // só envia se for usuário novo
     if (!db.users.includes(userId)) {
         db.users.push(userId);
         saveDB();
 
         const channel = await client.channels.fetch(CANAL_DESTINO);
 
-        const msg =
-`USUÁRIO:
+const msg =
+`
 **Usuário:** [${username}](https://www.roblox.com/users/${userId}/profile)
 **Executor:** ${executor}
 **Dispositivo:** ${device}
 **Data:** ${date}
 **Hora:** ${time}
-**Jogo:** [${placeName}](https://www.roblox.com/games/${placeId})
 **Entrar no servidor:** https://www.roblox.com/games/start?placeId=${placeId}&jobId=${serverJobId}
 `;
+
 
         channel.send(msg);
     }
 
-    return res.send("OK");
+    res.send("OK");
 });
 
 // ====== INICIAR SERVIDOR ======
