@@ -153,7 +153,7 @@ app.post("/log", async (req, res) => {
             .setFooter({ text: "Feito por fp3" })
             .setTimestamp();
 
-        channel.send({ embeds: [embed] });
+        channel.send({ embeds: [embed] }); // <- aqui está o embed
     }
 
     activeUsers[username.toLowerCase()] = true;
@@ -165,3 +165,4 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 client.login(BOT_TOKEN);
+
