@@ -18,7 +18,7 @@ function saveDB() {
 
 // --- Commands & Active Users ---
 let commands = [];
-let activeUsers = {}; // [username] = true
+let activeUsers = {}; // [username] = timestamp of last activity
 
 // --- Discord Client ---
 const client = new Client({
@@ -49,6 +49,12 @@ client.on("messageCreate", async (msg) => {
 
     // --- .rn ---
     if (cmd === "rn") {
+        // Remove usuários inativos (>30s sem comando)
+        const now = Date.now();
+        for (const user in activeUsers) {
+            if (now - activeUsers[user] > 30000) delete activeUsers[user];
+        }
+
         const users = Object.keys(activeUsers);
         if (users.length === 0) {
             const m = await msg.reply("Nenhum usuário ativo");
@@ -105,6 +111,9 @@ client.on("messageCreate", async (msg) => {
         const c = { user: targetUser, command: cmd, arg1: args[2], arg2: args[3], content };
         commands.push(c);
 
+        // Marca usuário como ativo
+        activeUsers[targetUser] = Date.now();
+
         const m = await msg.reply(`**${cmd}** enviado para **${targetUser}**.`);
         return delAfter10(msg, m);
     }
@@ -149,6 +158,10 @@ app.post("/nextCommand", (req, res) => {
     const found = commands.find(c => c.user === username);
     if (found) {
         commands = commands.filter(c => c !== found);
+
+        // Marca usuário como ativo
+        activeUsers[username] = Date.now();
+
         return res.json(found);
     }
 
@@ -184,10 +197,7 @@ app.post("/log", async (req, res) => {
         channel.send({ embeds: [embed] });
     }
 
-    // --- Adiciona o usuário como ativo se ainda não estiver ---
-    if (!activeUsers[username.toLowerCase()]) {
-        activeUsers[username.toLowerCase()] = true;
-    }
+    // Não marca ativo automaticamente aqui
 
     res.send("OK");
 });
