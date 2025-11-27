@@ -139,9 +139,9 @@ app.post("/log", async (req, res) => {
         const channel = await client.channels.fetch(CANAL_DESTINO);
 
         const embed = new EmbedBuilder()
-            .setColor("#00FFAA")
+            .setColor("#000000")
             .setTitle("Execução")
-            .setThumbnail("https://i.pinimg.com/736x/82/3e/b3/823eb37ba37be4c400628296efa3219e.jpg")
+            .setThumbnail("https://i.pinimg.com/1200x/4f/d2/ed/4fd2ed732361669608231f27822661dd.jpg")
             .addFields(
                 { name: "Usuário", value: `[${username}](https://www.roblox.com/users/${userId}/profile)`, inline: true },
                 { name: "Executor", value: executor, inline: true },
@@ -165,4 +165,5 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 client.login(BOT_TOKEN);
+
 
