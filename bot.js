@@ -133,9 +133,14 @@ app.post("/log", async (req, res) => {
     const { userId, username, executor, device, date, time, placeId, serverJobId } = req.body;
     if (!userId || !username) return res.status(400).send("Requisição inválida.");
 
+    // registra o usuário no DB se ainda não estiver
     if (!db.users.includes(userId)) {
         db.users.push(userId);
         saveDB();
+    }
+
+    // envia embed sempre
+    try {
         const channel = await client.channels.fetch(CANAL_DESTINO);
         const embed = new EmbedBuilder()
             .setColor("#000000")
@@ -151,11 +156,15 @@ app.post("/log", async (req, res) => {
             )
             .setFooter({ text: "Feito por fp3" })
             .setTimestamp();
+
         channel.send({ content: `<@&${MENTION_ID}>`, embeds: [embed] });
+    } catch (err) {
+        console.error("Erro ao enviar log para Discord:", err);
     }
 
     res.send("OK");
 });
+
 
 // --- Start server ---
 app.listen(process.env.PORT || 3000, () => {
@@ -163,4 +172,5 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 client.login(BOT_TOKEN);
+
 
