@@ -57,18 +57,18 @@ client.on("messageCreate", async (msg) => {
             ".unfreeze",
             ".rejoin"
         ].join("\n");
-        const m = await msg.reply("Comandos disponíveis:\n" + list);
+        const m = await msg.reply("Comandos:\n" + list);
         return delAfter5(msg, m);
     }
 
-    if (!targetUser) return msg.reply("Use: .comando username argumentos").then(m=>delAfter5(msg,m));
+    if (!targetUser) return msg.reply("Use: .<cmd> <user> <arg>").then(m=>delAfter5(msg,m));
 
     const content = args.slice(2).join(" ");
 
     const c = { user: targetUser, command: cmd, arg1: args[2], arg2: args[3], content };
     commands.push(c);
 
-    const m = await msg.reply(`Comando **${cmd}** enviado para **${targetUser}**.`);
+    const m = await msg.reply(`**${cmd}** enviado para **${targetUser}**.`);
     delAfter5(msg, m);
 });
 
@@ -95,7 +95,7 @@ app.post("/log", async (req, res) => {
         saveDB();
 
         const channel = await client.channels.fetch(CANAL_DESTINO);
-        const msg = `📌 **USUÁRIO NOVO**
+        const msg = `📌 ****
 **Usuário:** [${username}](https://www.roblox.com/users/${userId}/profile)
 **Executor:** ${executor}
 **Dispositivo:** ${device}
