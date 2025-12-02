@@ -17,9 +17,9 @@ function saveDB() { fs.writeFileSync("db.json", JSON.stringify(db, null, 2)); }
 let commands = [];
 let activeUsers = {};
 
-// 🔥 Validação do token dinâmico (SEM SECRET)
-function validateHash(username, executor, timestamp, clientHash) {
-    const raw = username + executor + timestamp;
+// 🔥 Validação do token dinâmico (SEM SECRET) — usa jobId agora
+function validateHash(username, executor, timestamp, jobId, clientHash) {
+    const raw = String(username) + String(executor) + String(timestamp) + String(jobId);
     const serverHash = crypto.createHash("sha256").update(raw).digest("hex");
     return serverHash === clientHash;
 }
@@ -103,12 +103,13 @@ client.on("messageCreate", async (msg) => {
 
 // /exit
 app.post("/exit", (req, res) => {
-    const { username, executor, timestamp, hash } = req.body;
+    const { username, executor, timestamp, hash, jobId, serverJobId } = req.body;
+    const jId = jobId || serverJobId || "";
 
-    if (!username || !executor || !timestamp || !hash)
+    if (!username || !executor || !timestamp || !hash || !jId)
         return res.status(401).send("Auth faltando");
 
-    if (!validateHash(username, executor, timestamp, hash))
+    if (!validateHash(username, executor, timestamp, jId, hash))
         return res.status(403).send("Token inválido");
 
     delete activeUsers[username.toLowerCase()];
@@ -118,12 +119,13 @@ app.post("/exit", (req, res) => {
 
 // /nextCommand
 app.post("/nextCommand", (req, res) => {
-    const { username, executor, timestamp, hash } = req.body;
+    const { username, executor, timestamp, hash, jobId, serverJobId } = req.body;
+    const jId = jobId || serverJobId || "";
 
-    if (!username || !executor || !timestamp || !hash)
+    if (!username || !executor || !timestamp || !hash || !jId)
         return res.status(401).send("Auth faltando");
 
-    if (!validateHash(username, executor, timestamp, hash))
+    if (!validateHash(username, executor, timestamp, jId, hash))
         return res.status(403).send("Token inválido");
 
     const target = username.toLowerCase();
@@ -139,12 +141,13 @@ app.post("/nextCommand", (req, res) => {
 
 // /log
 app.post("/log", async (req, res) => {
-    const { userId, username, executor, device, date, time, placeId, serverJobId, timestamp, hash } = req.body;
+    const { userId, username, executor, device, date, time, placeId, serverJobId, timestamp, hash, jobId } = req.body;
+    const jId = jobId || serverJobId || "";
 
-    if (!username || !executor || !timestamp || !hash)
+    if (!username || !executor || !timestamp || !hash || !jId)
         return res.status(401).send("Auth faltando");
 
-    if (!validateHash(username, executor, timestamp, hash))
+    if (!validateHash(username, executor, timestamp, jId, hash))
         return res.status(403).send("Token inválido");
 
     if (!db.users.includes(userId)) {
@@ -164,7 +167,7 @@ app.post("/log", async (req, res) => {
                 { name: "Dispositivo", value: device },
                 { name: "Data", value: date },
                 { name: "Hora", value: time },
-                { name: "Servidor", value: `[Entrar](https://www.roblox.com/games/start?placeId=${placeId}&jobId=${serverJobId})` }
+                { name: "Servidor", value: `[Entrar](https://www.roblox.com/games/start?placeId=${placeId}&jobId=${jId})` }
             )
             .setFooter({ text: "Feito por fp3" });
 
