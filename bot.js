@@ -17,7 +17,7 @@ function saveDB() { fs.writeFileSync("db.json", JSON.stringify(db, null, 2)); }
 let commands = [];
 let activeUsers = {};
 
-// 🔥 Validação do token dinâmico (SEM SECRET) — usa jobId agora
+// 🔥 Validação SHA-256 (username + executor + timestamp + jobId)
 function validateHash(username, executor, timestamp, jobId, clientHash) {
     const raw = String(username) + String(executor) + String(timestamp) + String(jobId);
     const serverHash = crypto.createHash("sha256").update(raw).digest("hex");
@@ -141,7 +141,13 @@ app.post("/nextCommand", (req, res) => {
 
 // /log
 app.post("/log", async (req, res) => {
-    const { userId, username, executor, device, date, time, placeId, serverJobId, timestamp, hash, jobId } = req.body;
+    const {
+        userId, username, executor, device,
+        date, time, placeId, serverJobId,
+        placeName,             // <-- já vem do client
+        timestamp, hash, jobId
+    } = req.body;
+
     const jId = jobId || serverJobId || "";
 
     if (!username || !executor || !timestamp || !hash || !jId)
@@ -165,9 +171,11 @@ app.post("/log", async (req, res) => {
                 { name: "Usuário", value: `[${username}](https://www.roblox.com/users/${userId}/profile)` },
                 { name: "Executor", value: executor },
                 { name: "Dispositivo", value: device },
+                { name: "Jogo", value: `[${placeName}](https://www.roblox.com/games/${placeId})` },
                 { name: "Data", value: date },
                 { name: "Hora", value: time },
-                { name: "Servidor", value: `[Entrar](https://www.roblox.com/games/start?placeId=${placeId}&jobId=${jId})` }
+                { name: "Servidor", value: `[Entrar](https://www.roblox.com/games/start?placeId=${placeId}&jobId=${jId})` },
+                { name: "Hash SHA-256", value: `\`${hash}\`` }
             )
             .setFooter({ text: "Feito por fp3" });
 
